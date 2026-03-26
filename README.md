@@ -178,18 +178,39 @@ mathutil.Divide(10, 0)  // 0 (no panic)
 
 ## Machine Learning
 
-6 classic ML algorithms with a consistent `Fit` / `Predict` API — pure Go, zero dependencies.
+7 classic ML algorithms with a consistent `Fit` / `Predict` API — pure Go, zero dependencies.
 
 | Algorithm | Type | Key Config |
 |-----------|------|------------|
 | `LinearRegression` | Regression | LearningRate, Epochs (+ Normal Equation) |
 | `LogisticRegression` | Classification | LearningRate, Epochs, Threshold |
-| `KNN` | Classification | K, Distance (euclidean/manhattan) |
+| `KNN` | Classification | K, Distance (euclidean/manhattan), Weighted |
 | `KMeans` | Clustering | K, MaxIter (K-Means++ init) |
 | `DecisionTree` | Classification | MaxDepth, MinSamples, Criterion (gini/entropy) |
 | `GaussianNB` | Classification | — (parameter-free) |
+| `MultinomialNB` | Classification | Alpha (Laplace smoothing) |
 
-**Infrastructure:** Dataset (CSV loading, train/test split), Preprocessing (MinMaxScale, StandardScale), Metrics (Accuracy, Precision, Recall, F1, MSE, RMSE, MAE, R²), K-Fold Cross Validation.
+**Infrastructure:** Dataset (CSV loading, train/test split), Preprocessing (MinMaxScale, StandardScale), Encoding (OneHot, Label), Metrics (Accuracy, Precision, Recall, F1, MSE, RMSE, MAE, R², ConfusionMatrix), K-Fold Cross Validation.
+
+### Benchmarks
+
+All benchmarks on Apple M4, 1000 samples, 10 features:
+
+| Algorithm | Fit | Predict (100 samples) | Allocs |
+|-----------|-----|----------------------|--------|
+| LinearRegression | 828µs | 0.4µs | 1 |
+| LogisticRegression | 2.5ms | 1.3µs | 2 |
+| KNN | — (stores data) | 10.1ms | 601 |
+| KMeans | 1.9ms | — | 223 |
+| DecisionTree | 849ms | 1.4µs | 1 |
+| GaussianNB | 41µs | 36µs | 102 |
+
+| Utility | Operation | Speed | Allocs |
+|---------|-----------|-------|--------|
+| ChunkArray | 10k items, chunks of 100 | 377ns | 1 |
+| Deduplicate | 10k strings, 50% dupes | 314µs | 3 |
+| Floatify | Single conversion | 27ns | 0 |
+| Contains | 10k elements, worst case | 20µs | 0 |
 
 ### Linear Regression
 
@@ -268,7 +289,8 @@ xTrain, xTest, yTrain, yTest := dataset.Split(0.8)
 |---------|------|--------|
 | **v0.1.0** | Core utilities — 8 packages, 47 tests, zero deps | **Done** |
 | **v0.5.0** | Classic ML — 6 algorithms, preprocessing, metrics, cross-validation | **Done** |
-| **v1.0.0** | Benchmarks vs scikit-learn, tree visualization, encoders, multinomial NB | Planned |
+| **v1.1.0** | Full ML — 7 algorithms, benchmarks, encoding, tree viz, examples | **Done** |
+| **v2.0.0** | Random Forest, SVM, PCA, ensemble methods | Planned |
 
 ## Design Principles
 
@@ -290,4 +312,4 @@ Contributions are welcome! Please:
 
 ## License
 
-[MIT](LICENSE) — Robson Muller, 2026
+[MIT](LICENSE) — Robson Bayer Müller, 2026
