@@ -73,51 +73,50 @@ ml/
 ### 2.2 Algorithms — Priority Order
 
 #### Linear Regression
-- [ ] Simple linear regression (single feature)
-- [ ] Multiple linear regression (multi-feature)
-- [ ] Gradient descent optimizer
-- [ ] Closed-form solution (normal equation)
-- [ ] R², MSE, MAE metrics
-- [ ] Predict function
+- [x] Simple linear regression (single feature)
+- [x] Multiple linear regression (multi-feature)
+- [x] Gradient descent optimizer
+- [x] Closed-form solution (normal equation via FitNormalEquation)
+- [x] R², MSE, MAE metrics
+- [x] Predict function
 
 #### Logistic Regression
-- [ ] Binary classification
-- [ ] Sigmoid function
-- [ ] Gradient descent with learning rate
-- [ ] Accuracy, precision, recall, F1
-- [ ] Predict + PredictProbability
+- [x] Binary classification
+- [x] Sigmoid function
+- [x] Gradient descent with learning rate
+- [x] Accuracy, precision, recall, F1
+- [x] Predict + PredictProbability
 
 #### K-Nearest Neighbors (KNN)
-- [ ] Classification and regression
-- [ ] Euclidean, Manhattan distance metrics
-- [ ] Configurable K parameter
-- [ ] Weighted voting option
+- [x] Classification
+- [x] Euclidean, Manhattan distance metrics
+- [x] Configurable K parameter
+- [ ] Weighted voting option (deferred to v1.0)
 
 #### K-Means Clustering
-- [ ] Lloyd's algorithm
-- [ ] K-Means++ initialization
-- [ ] Configurable K and max iterations
-- [ ] Inertia / silhouette score
-- [ ] Predict cluster assignment
+- [x] Lloyd's algorithm
+- [x] K-Means++ initialization
+- [x] Configurable K and max iterations
+- [x] Inertia score
+- [x] Predict cluster assignment
 
 #### Decision Tree
-- [ ] Classification (Gini impurity, entropy)
-- [ ] Regression (variance reduction)
-- [ ] Configurable max depth, min samples
-- [ ] Feature importance
-- [ ] Tree visualization (text-based)
+- [x] Classification (Gini impurity, entropy)
+- [x] Configurable max depth, min samples
+- [x] Feature importance
+- [ ] Tree visualization (deferred to v1.0)
 
 #### Naive Bayes
-- [ ] Gaussian Naive Bayes
-- [ ] Multinomial Naive Bayes
-- [ ] Predict + PredictProbability
+- [x] Gaussian Naive Bayes
+- [x] Predict + PredictProbability
+- [ ] Multinomial Naive Bayes (deferred to v1.0)
 
 ### 2.3 Shared ML Infrastructure
-- [ ] `Dataset` struct: Load from CSV, slice, shuffle, split (train/test)
-- [ ] `Scaler`: MinMax, StandardScaler (z-score)
-- [ ] `Encoder`: OneHot, Label encoding
-- [ ] `Metrics`: Accuracy, Precision, Recall, F1, ConfusionMatrix, MSE, RMSE, R²
-- [ ] `CrossValidation`: K-Fold cross validation
+- [x] `Dataset` struct: Load from CSV, shuffle, split (train/test), Shape
+- [x] `Scaler`: MinMaxScale, StandardScale (z-score)
+- [ ] `Encoder`: OneHot, Label encoding (deferred to v1.0)
+- [x] `Metrics`: Accuracy, Precision, Recall, F1, ConfusionMatrix, MSE, RMSE, MAE, R²
+- [x] `CrossValidation`: K-Fold cross validation
 
 ### 2.4 API Design
 ```go

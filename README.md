@@ -43,7 +43,7 @@ go get github.com/rbmuller/datatrax
 | [`maputil`](maputil/) | Map operations — copy, generate from JSON | `CopyMap[K,V]`, `GenerateMap` |
 | [`mathutil`](mathutil/) | Safe math operations | `Divide` (zero-safe) |
 | [`strutil`](strutil/) | String utilities and generic search | `Contains[T]`, `TrimQuotes`, `SplitByRegexp` |
-| `ml` | Classic ML algorithms *(coming in v0.5.0)* | Linear Regression, KNN, K-Means, Decision Tree, ... |
+| [`ml`](ml/) | Classic ML algorithms — 6 models, metrics, preprocessing | `LinearRegression`, `KNN`, `KMeans`, `DecisionTree`, ... |
 
 ## Quick Start
 
@@ -176,32 +176,99 @@ mathutil.Divide(10, 3)  // 3.333...
 mathutil.Divide(10, 0)  // 0 (no panic)
 ```
 
+## Machine Learning
+
+6 classic ML algorithms with a consistent `Fit` / `Predict` API — pure Go, zero dependencies.
+
+| Algorithm | Type | Key Config |
+|-----------|------|------------|
+| `LinearRegression` | Regression | LearningRate, Epochs (+ Normal Equation) |
+| `LogisticRegression` | Classification | LearningRate, Epochs, Threshold |
+| `KNN` | Classification | K, Distance (euclidean/manhattan) |
+| `KMeans` | Clustering | K, MaxIter (K-Means++ init) |
+| `DecisionTree` | Classification | MaxDepth, MinSamples, Criterion (gini/entropy) |
+| `GaussianNB` | Classification | — (parameter-free) |
+
+**Infrastructure:** Dataset (CSV loading, train/test split), Preprocessing (MinMaxScale, StandardScale), Metrics (Accuracy, Precision, Recall, F1, MSE, RMSE, MAE, R²), K-Fold Cross Validation.
+
+### Linear Regression
+
+```go
+import "github.com/rbmuller/datatrax/ml"
+
+model := ml.NewLinearRegression()
+model.Fit(xTrain, yTrain)
+predictions := model.Predict(xTest)
+fmt.Println("R²:", ml.R2Score(yTest, predictions))
+```
+
+### Classification (KNN)
+
+```go
+clf := ml.NewKNN(ml.KNNConfig{K: 5, Distance: "euclidean"})
+clf.Fit(xTrain, yTrain)
+predictions := clf.Predict(xTest)
+fmt.Println("Accuracy:", ml.Accuracy(yTest, predictions))
+fmt.Println("F1:", ml.F1Score(yTest, predictions, 1.0))
+```
+
+### Clustering (K-Means)
+
+```go
+km := ml.NewKMeans(ml.KMeansConfig{K: 3, MaxIter: 100})
+km.Fit(data)
+labels := km.Predict(data)
+fmt.Println("Inertia:", km.Inertia())
+```
+
+### Decision Tree
+
+```go
+dt := ml.NewDecisionTree(ml.DecisionTreeConfig{
+    MaxDepth:   5,
+    MinSamples: 2,
+    Criterion:  "gini",
+})
+dt.Fit(xTrain, yTrain)
+predictions := dt.Predict(xTest)
+fmt.Println("Importance:", dt.FeatureImportance())
+```
+
+### Preprocessing & Evaluation
+
+```go
+// Scale features
+xScaled := ml.MinMaxScale(xTrain)
+
+// Cross validation
+folds := ml.KFoldSplit(x, y, 5)
+for _, fold := range folds {
+    model.Fit(fold.XTrain, fold.YTrain)
+    pred := model.Predict(fold.XTest)
+    fmt.Println("Fold R²:", ml.R2Score(fold.YTest, pred))
+}
+
+// Full metrics
+fmt.Println("Accuracy:", ml.Accuracy(yTrue, yPred))
+fmt.Println("Precision:", ml.Precision(yTrue, yPred, 1.0))
+fmt.Println("Recall:", ml.Recall(yTrue, yPred, 1.0))
+fmt.Println("Confusion:", ml.ConfusionMatrix(yTrue, yPred))
+```
+
+### Load Dataset from CSV
+
+```go
+dataset, err := ml.LoadCSV("data.csv", 4) // target is column 4
+xTrain, xTest, yTrain, yTest := dataset.Split(0.8)
+```
+
 ## Roadmap
 
 | Version | What | Status |
 |---------|------|--------|
 | **v0.1.0** | Core utilities — 8 packages, 47 tests, zero deps | **Done** |
-| **v0.5.0** | Classic ML — Linear/Logistic Regression, KNN, K-Means, Decision Tree, Naive Bayes | In Progress |
-| **v1.0.0** | Full ML suite — preprocessing, cross-validation, metrics, benchmarks | Planned |
-
-### ML Preview (v0.5.0)
-
-```go
-import "github.com/rbmuller/datatrax/ml"
-
-// Train a model in 3 lines
-model := ml.NewLinearRegression()
-model.Fit(xTrain, yTrain)
-predictions := model.Predict(xTest)
-
-// Evaluate
-score := ml.R2Score(yTest, predictions)
-
-// Same clean API for all algorithms
-clf := ml.NewKNN(ml.KNNConfig{K: 5})
-clf.Fit(xTrain, yTrain)
-accuracy := ml.Accuracy(yTest, clf.Predict(xTest))
-```
+| **v0.5.0** | Classic ML — 6 algorithms, preprocessing, metrics, cross-validation | **Done** |
+| **v1.0.0** | Benchmarks vs scikit-learn, tree visualization, encoders, multinomial NB | Planned |
 
 ## Design Principles
 
