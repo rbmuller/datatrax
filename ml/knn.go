@@ -9,6 +9,7 @@ import (
 type KNN struct {
 	K        int
 	Distance string // "euclidean" or "manhattan"
+	Weighted bool   // Use inverse-distance weighted voting.
 	xTrain   [][]float64
 	yTrain   []float64
 }
@@ -17,6 +18,7 @@ type KNN struct {
 type KNNConfig struct {
 	K        int
 	Distance string
+	Weighted bool // When true, closer neighbors have more influence (weight = 1/distance).
 }
 
 // NewKNN creates a new KNN classifier with the given configuration.
@@ -30,7 +32,7 @@ func NewKNN(config KNNConfig) *KNN {
 	if dist == "" {
 		dist = "euclidean"
 	}
-	return &KNN{K: k, Distance: dist}
+	return &KNN{K: k, Distance: dist, Weighted: config.Weighted}
 }
 
 // Fit stores the training data for later use during prediction.
@@ -76,7 +78,29 @@ func (knn *KNN) predictSingle(sample []float64) float64 {
 		k = len(neighbors)
 	}
 
-	// Majority vote
+	if knn.Weighted {
+		// Inverse-distance weighted voting
+		weights := make(map[float64]float64)
+		for _, n := range neighbors[:k] {
+			if n.dist == 0 {
+				// Exact match: return this label immediately
+				return n.label
+			}
+			weights[n.label] += 1.0 / n.dist
+		}
+
+		bestLabel := 0.0
+		bestWeight := 0.0
+		for label, w := range weights {
+			if w > bestWeight {
+				bestWeight = w
+				bestLabel = label
+			}
+		}
+		return bestLabel
+	}
+
+	// Uniform majority vote
 	votes := make(map[float64]int)
 	for _, n := range neighbors[:k] {
 		votes[n.label]++

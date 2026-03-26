@@ -1,6 +1,10 @@
 package ml
 
-import "math"
+import (
+	"fmt"
+	"math"
+	"strings"
+)
 
 // DecisionTree implements a classification decision tree using CART
 // (Classification and Regression Trees) with configurable split criteria.
@@ -89,6 +93,50 @@ func (dt *DecisionTree) FeatureImportance() []float64 {
 	result := make([]float64, len(dt.importances))
 	copy(result, dt.importances)
 	return result
+}
+
+// String returns a human-readable text representation of the decision tree.
+func (dt *DecisionTree) String() string {
+	if dt.root == nil {
+		return "<empty tree>"
+	}
+	var sb strings.Builder
+	dt.stringNode(&sb, dt.root, "", true, true)
+	return sb.String()
+}
+
+func (dt *DecisionTree) stringNode(sb *strings.Builder, node *treeNode, prefix string, isLast bool, isRoot bool) {
+	if node == nil {
+		return
+	}
+
+	connector := ""
+	if !isRoot {
+		if isLast {
+			connector = "└── "
+		} else {
+			connector = "├── "
+		}
+	}
+
+	if node.isLeaf {
+		fmt.Fprintf(sb, "%s%sLeaf: %.2f\n", prefix, connector, node.label)
+		return
+	}
+
+	fmt.Fprintf(sb, "%s%s[Feature %d <= %.2f]\n", prefix, connector, node.featureIdx, node.threshold)
+
+	childPrefix := prefix
+	if !isRoot {
+		if isLast {
+			childPrefix += "    "
+		} else {
+			childPrefix += "│   "
+		}
+	}
+
+	dt.stringNode(sb, node.left, childPrefix, false, false)
+	dt.stringNode(sb, node.right, childPrefix, true, false)
 }
 
 func (dt *DecisionTree) buildTree(x [][]float64, y []float64, depth int) *treeNode {

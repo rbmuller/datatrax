@@ -109,3 +109,103 @@ func (nb *GaussianNB) PredictProbability(x [][]float64) [][]float64 {
 func gaussianLogPDF(x, mean, variance float64) float64 {
 	return -0.5*math.Log(2*math.Pi*variance) - 0.5*(x-mean)*(x-mean)/variance
 }
+
+// MultinomialNB implements the Multinomial Naive Bayes classifier.
+// It is suitable for classification with discrete features (e.g. word counts).
+type MultinomialNB struct {
+	Alpha         float64 // Laplace smoothing parameter.
+	classes       []float64
+	logPriors     map[float64]float64
+	logLikelihoods map[float64][]float64
+	nFeatures     int
+}
+
+// NewMultinomialNB creates a new Multinomial Naive Bayes classifier.
+// Alpha is the Laplace smoothing parameter (default 1.0).
+func NewMultinomialNB(alpha float64) *MultinomialNB {
+	if alpha <= 0 {
+		alpha = 1.0
+	}
+	return &MultinomialNB{Alpha: alpha}
+}
+
+// Fit computes the log probabilities from the training data.
+// Features in x should be non-negative counts.
+func (nb *MultinomialNB) Fit(x [][]float64, y []float64) {
+	if len(x) == 0 {
+		return
+	}
+	n := len(x)
+	nb.nFeatures = len(x[0])
+
+	// Group data by class
+	classData := make(map[float64][][]float64)
+	for i := range x {
+		classData[y[i]] = append(classData[y[i]], x[i])
+	}
+
+	nb.classes = make([]float64, 0, len(classData))
+	nb.logPriors = make(map[float64]float64)
+	nb.logLikelihoods = make(map[float64][]float64)
+
+	for class, data := range classData {
+		nb.classes = append(nb.classes, class)
+		nb.logPriors[class] = math.Log(float64(len(data)) / float64(n))
+
+		// Sum feature counts for this class
+		featureSums := make([]float64, nb.nFeatures)
+		totalCount := 0.0
+		for _, row := range data {
+			for j := 0; j < nb.nFeatures; j++ {
+				featureSums[j] += row[j]
+				totalCount += row[j]
+			}
+		}
+
+		// Compute log likelihoods with Laplace smoothing
+		logLik := make([]float64, nb.nFeatures)
+		denominator := totalCount + nb.Alpha*float64(nb.nFeatures)
+		for j := 0; j < nb.nFeatures; j++ {
+			logLik[j] = math.Log((featureSums[j] + nb.Alpha) / denominator)
+		}
+		nb.logLikelihoods[class] = logLik
+	}
+}
+
+// Predict returns predicted class labels for all samples in x.
+func (nb *MultinomialNB) Predict(x [][]float64) []float64 {
+	probs := nb.PredictProbability(x)
+	preds := make([]float64, len(x))
+	for i, classProbs := range probs {
+		bestClass := nb.classes[0]
+		bestProb := -math.MaxFloat64
+		for j, class := range nb.classes {
+			if classProbs[j] > bestProb {
+				bestProb = classProbs[j]
+				bestClass = class
+			}
+		}
+		preds[i] = bestClass
+	}
+	return preds
+}
+
+// PredictProbability returns the log-probability of each class for all
+// samples in x. Each inner slice corresponds to the classes in the
+// same order as they were encountered during Fit.
+func (nb *MultinomialNB) PredictProbability(x [][]float64) [][]float64 {
+	result := make([][]float64, len(x))
+	for i, sample := range x {
+		logProbs := make([]float64, len(nb.classes))
+		for j, class := range nb.classes {
+			logProb := nb.logPriors[class]
+			logLik := nb.logLikelihoods[class]
+			for f := 0; f < nb.nFeatures; f++ {
+				logProb += sample[f] * logLik[f]
+			}
+			logProbs[j] = logProb
+		}
+		result[i] = logProbs
+	}
+	return result
+}

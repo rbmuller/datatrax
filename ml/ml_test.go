@@ -600,3 +600,226 @@ func TestManhattanDistance(t *testing.T) {
 		t.Errorf("manhattanDistance = %f, want 7.0", d)
 	}
 }
+
+// --- KNN Weighted Voting ---
+
+func TestKNNWeighted(t *testing.T) {
+	// Place a single class-0 point very close to the query, and two class-1
+	// points farther away. With K=3 and uniform voting, class 1 wins (2 vs 1).
+	// With weighted voting, class 0 should win because the nearby point has
+	// much higher weight.
+	x := [][]float64{{0.0, 0.0}, {10.0, 0.0}, {10.0, 1.0}}
+	y := []float64{0, 1, 1}
+
+	// Uniform voting: class 1 should win (2 votes vs 1)
+	knnUniform := NewKNN(KNNConfig{K: 3, Distance: "euclidean", Weighted: false})
+	knnUniform.Fit(x, y)
+	predsUniform := knnUniform.Predict([][]float64{{0.1, 0.0}})
+	if predsUniform[0] != 1 {
+		t.Errorf("KNN uniform pred = %f, want 1 (majority vote)", predsUniform[0])
+	}
+
+	// Weighted voting: class 0 should win (much closer)
+	knnWeighted := NewKNN(KNNConfig{K: 3, Distance: "euclidean", Weighted: true})
+	knnWeighted.Fit(x, y)
+	predsWeighted := knnWeighted.Predict([][]float64{{0.1, 0.0}})
+	if predsWeighted[0] != 0 {
+		t.Errorf("KNN weighted pred = %f, want 0 (closer neighbor)", predsWeighted[0])
+	}
+}
+
+func TestKNNWeightedExactMatch(t *testing.T) {
+	// When a query exactly matches a training point, distance is 0.
+	// The weighted predictor should return that point's label immediately.
+	x := [][]float64{{1, 1}, {5, 5}, {5, 6}}
+	y := []float64{0, 1, 1}
+
+	knn := NewKNN(KNNConfig{K: 3, Weighted: true})
+	knn.Fit(x, y)
+	preds := knn.Predict([][]float64{{1, 1}})
+	if preds[0] != 0 {
+		t.Errorf("KNN weighted exact match pred = %f, want 0", preds[0])
+	}
+}
+
+// --- Decision Tree String ---
+
+func TestDecisionTreeString(t *testing.T) {
+	x := [][]float64{{1}, {2}, {3}, {4}, {5}, {6}}
+	y := []float64{0, 0, 0, 1, 1, 1}
+
+	dt := NewDecisionTree(DecisionTreeConfig{MaxDepth: 5, MinSamples: 1})
+	dt.Fit(x, y)
+	s := dt.String()
+
+	if len(s) == 0 {
+		t.Error("DecisionTree String() returned empty string")
+	}
+
+	// Should contain leaf nodes and feature splits
+	if !containsSubstring(s, "Leaf:") {
+		t.Error("DecisionTree String() should contain 'Leaf:'")
+	}
+	if !containsSubstring(s, "Feature") {
+		t.Error("DecisionTree String() should contain 'Feature'")
+	}
+	if !containsSubstring(s, "├──") && !containsSubstring(s, "└──") {
+		t.Error("DecisionTree String() should contain tree connectors")
+	}
+}
+
+func TestDecisionTreeStringEmpty(t *testing.T) {
+	dt := NewDecisionTree(DecisionTreeConfig{})
+	s := dt.String()
+	if s != "<empty tree>" {
+		t.Errorf("Empty tree String() = %q, want '<empty tree>'", s)
+	}
+}
+
+func containsSubstring(s, substr string) bool {
+	for i := 0; i <= len(s)-len(substr); i++ {
+		if s[i:i+len(substr)] == substr {
+			return true
+		}
+	}
+	return false
+}
+
+// --- Multinomial Naive Bayes ---
+
+func TestMultinomialNB(t *testing.T) {
+	// Simulate word-count data: two classes (0 and 1) with 4 features (words).
+	// Class 0 documents have high counts in features 0-1.
+	// Class 1 documents have high counts in features 2-3.
+	x := [][]float64{
+		{5, 3, 0, 0}, // class 0
+		{4, 4, 1, 0}, // class 0
+		{6, 2, 0, 1}, // class 0
+		{3, 5, 0, 0}, // class 0
+		{0, 0, 5, 3}, // class 1
+		{1, 0, 4, 4}, // class 1
+		{0, 1, 6, 2}, // class 1
+		{0, 0, 3, 5}, // class 1
+	}
+	y := []float64{0, 0, 0, 0, 1, 1, 1, 1}
+
+	nb := NewMultinomialNB(1.0)
+	nb.Fit(x, y)
+	preds := nb.Predict(x)
+	acc := Accuracy(y, preds)
+	if acc < 0.9 {
+		t.Errorf("MultinomialNB accuracy = %f, want > 0.9", acc)
+	}
+
+	// Test on unseen samples
+	testX := [][]float64{
+		{6, 4, 0, 0}, // should be class 0
+		{0, 0, 6, 4}, // should be class 1
+	}
+	testPreds := nb.Predict(testX)
+	if testPreds[0] != 0 {
+		t.Errorf("MultinomialNB test pred[0] = %f, want 0", testPreds[0])
+	}
+	if testPreds[1] != 1 {
+		t.Errorf("MultinomialNB test pred[1] = %f, want 1", testPreds[1])
+	}
+}
+
+func TestMultinomialNBPredictProbability(t *testing.T) {
+	x := [][]float64{
+		{3, 0}, {2, 1},
+		{0, 3}, {1, 2},
+	}
+	y := []float64{0, 0, 1, 1}
+
+	nb := NewMultinomialNB(1.0)
+	nb.Fit(x, y)
+	probs := nb.PredictProbability(x)
+
+	if len(probs) != 4 {
+		t.Errorf("PredictProbability rows = %d, want 4", len(probs))
+	}
+	if len(probs[0]) != 2 {
+		t.Errorf("PredictProbability cols = %d, want 2", len(probs[0]))
+	}
+}
+
+// --- Encoding ---
+
+func TestLabelEncode(t *testing.T) {
+	labels := []string{"cat", "dog", "cat", "bird", "dog", "bird"}
+	encoded, mapping := LabelEncode(labels)
+
+	// Should have 3 unique labels
+	if len(mapping) != 3 {
+		t.Errorf("LabelEncode mapping size = %d, want 3", len(mapping))
+	}
+
+	// Sorted order: bird=0, cat=1, dog=2
+	if mapping["bird"] != 0 || mapping["cat"] != 1 || mapping["dog"] != 2 {
+		t.Errorf("LabelEncode mapping = %v, want bird=0 cat=1 dog=2", mapping)
+	}
+
+	expected := []float64{1, 2, 1, 0, 2, 0}
+	for i, v := range encoded {
+		if v != expected[i] {
+			t.Errorf("LabelEncode[%d] = %f, want %f", i, v, expected[i])
+		}
+	}
+}
+
+func TestLabelDecode(t *testing.T) {
+	labels := []string{"cat", "dog", "bird"}
+	encoded, mapping := LabelEncode(labels)
+	decoded := LabelDecode(encoded, mapping)
+
+	for i, label := range decoded {
+		if label != labels[i] {
+			t.Errorf("LabelDecode[%d] = %s, want %s", i, label, labels[i])
+		}
+	}
+}
+
+func TestOneHotEncode(t *testing.T) {
+	labels := []string{"red", "blue", "green", "red", "blue"}
+	matrix, categories := OneHotEncode(labels)
+
+	// Categories should be sorted
+	expectedCats := []string{"blue", "green", "red"}
+	if len(categories) != 3 {
+		t.Errorf("OneHotEncode categories = %d, want 3", len(categories))
+	}
+	for i, cat := range categories {
+		if cat != expectedCats[i] {
+			t.Errorf("OneHotEncode category[%d] = %s, want %s", i, cat, expectedCats[i])
+		}
+	}
+
+	if len(matrix) != 5 {
+		t.Errorf("OneHotEncode rows = %d, want 5", len(matrix))
+	}
+
+	// "red" -> index 2 -> [0, 0, 1]
+	if matrix[0][0] != 0 || matrix[0][1] != 0 || matrix[0][2] != 1 {
+		t.Errorf("OneHotEncode[0] = %v, want [0 0 1]", matrix[0])
+	}
+	// "blue" -> index 0 -> [1, 0, 0]
+	if matrix[1][0] != 1 || matrix[1][1] != 0 || matrix[1][2] != 0 {
+		t.Errorf("OneHotEncode[1] = %v, want [1 0 0]", matrix[1])
+	}
+	// "green" -> index 1 -> [0, 1, 0]
+	if matrix[2][0] != 0 || matrix[2][1] != 1 || matrix[2][2] != 0 {
+		t.Errorf("OneHotEncode[2] = %v, want [0 1 0]", matrix[2])
+	}
+
+	// Each row should sum to 1
+	for i, row := range matrix {
+		sum := 0.0
+		for _, v := range row {
+			sum += v
+		}
+		if sum != 1.0 {
+			t.Errorf("OneHotEncode row %d sum = %f, want 1.0", i, sum)
+		}
+	}
+}
