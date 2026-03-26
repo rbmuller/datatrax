@@ -84,3 +84,44 @@ func TestSplitDateTokensEmpty(t *testing.T) {
 		t.Errorf("SplitDateTokens(\"\") = %s, %s, %s", day, month, year)
 	}
 }
+
+func TestSplitDateTokensTooFewParts(t *testing.T) {
+	day, month, year := SplitDateTokens("01/05")
+	if day != "0" || month != "0" || year != "0" {
+		t.Errorf("SplitDateTokens(\"01/05\") = %s, %s, %s, want 0, 0, 0", day, month, year)
+	}
+}
+
+func TestSplitDateTokensNoPadding(t *testing.T) {
+	day, month, year := SplitDateTokens("12/25/2024")
+	if day != "25" || month != "12" || year != "2024" {
+		t.Errorf("SplitDateTokens(\"12/25/2024\") = %s, %s, %s", day, month, year)
+	}
+}
+
+func TestPadDateWithLeadingZeros(t *testing.T) {
+	tests := []struct {
+		name  string
+		input string
+		want  string
+	}{
+		{"empty string", "", ""},
+		{"needs padding", "1/5/2024", "05/01/2024"},
+		{"no padding needed", "12/25/2024", "25/12/2024"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := PadDateWithLeadingZeros(tt.input)
+			if got != tt.want {
+				t.Errorf("PadDateWithLeadingZeros(%q) = %q, want %q", tt.input, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestStringToDateInvalidFormat(t *testing.T) {
+	_, err := StringToDate("2006-01-02", "not-a-date")
+	if err == nil {
+		t.Error("StringToDate() expected error for invalid date string")
+	}
+}

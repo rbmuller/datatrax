@@ -12,7 +12,9 @@ func TestFloatify(t *testing.T) {
 		wantErr bool
 	}{
 		{"float64 input", 3.14, 3.14, false},
+		{"float32 input", float32(1.5), 1.5, false},
 		{"int input", 42, 42.0, false},
+		{"int64 input", int64(99), 99.0, false},
 		{"string input", "2.5", 2.5, false},
 		{"invalid string", "abc", 0, true},
 		{"nil input", nil, 0, true},
@@ -40,10 +42,13 @@ func TestIntegerify(t *testing.T) {
 		wantErr bool
 	}{
 		{"float64 input", 3.9, 3, false},
+		{"float32 input", float32(2.7), 2, false},
 		{"int input", 42, 42, false},
+		{"int64 input", int64(77), 77, false},
 		{"string input", "100", 100, false},
 		{"invalid string", "abc", 0, true},
 		{"nil input", nil, 0, true},
+		{"bool input (unsupported)", true, 0, true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
