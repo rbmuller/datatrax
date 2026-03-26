@@ -300,6 +300,17 @@ xTrain, xTest, yTrain, yTest := dataset.Split(0.8)
 4. **Pipeline-ready** — Every function works with slices and streams
 5. **Documentation-driven** — If it's not documented, it doesn't exist
 
+## Why Datatrax over existing Go ML libs?
+
+| Library | Status | How Datatrax compares |
+|---------|--------|----------------------|
+| goml | Abandoned (2019) | Active, modern Go 1.21+ with generics |
+| golearn | Abandoned (2020) | Simpler API, batteries included |
+| gorgonia | Active but complex | scikit-learn-simple, not TensorFlow-complex |
+| sajari/regression | Regression only | Full toolkit: utilities + ML + preprocessing |
+
+Datatrax is NOT competing with deep learning frameworks. It's the **scikit-learn of Go** — classic ML with a clean API, plus data engineering utilities that no other Go ML lib offers.
+
 ## Contributing
 
 Contributions are welcome! Please:
