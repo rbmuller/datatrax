@@ -213,3 +213,32 @@ func BenchmarkGaussianNBPredict(b *testing.B) {
 		nb.Predict(xPred)
 	}
 }
+
+// --- Random Forest ---
+
+func BenchmarkRandomForestFit(b *testing.B) {
+	rng := rand.New(rand.NewSource(benchSeed))
+	x := generateFeatures(rng, 500, benchFeatures)
+	y := generateMultiClassLabels(rng, 500, benchClasses)
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		rf := NewRandomForest(RandomForestConfig{NTrees: 10, MaxDepth: 8, MinSamples: 5, Seed: benchSeed})
+		rf.Fit(x, y)
+	}
+}
+
+func BenchmarkRandomForestPredict(b *testing.B) {
+	rng := rand.New(rand.NewSource(benchSeed))
+	x := generateFeatures(rng, 500, benchFeatures)
+	y := generateMultiClassLabels(rng, 500, benchClasses)
+	xPred := generateFeatures(rng, benchPredictN, benchFeatures)
+
+	rf := NewRandomForest(RandomForestConfig{NTrees: 10, MaxDepth: 8, MinSamples: 5, Seed: benchSeed})
+	rf.Fit(x, y)
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		rf.Predict(xPred)
+	}
+}

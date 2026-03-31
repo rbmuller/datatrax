@@ -43,7 +43,7 @@ go get github.com/rbmuller/datatrax
 | [`maputil`](maputil/) | Map operations — copy, generate from JSON | `CopyMap[K,V]`, `GenerateMap` |
 | [`mathutil`](mathutil/) | Safe math operations | `Divide` (zero-safe) |
 | [`strutil`](strutil/) | String utilities and generic search | `Contains[T]`, `TrimQuotes`, `SplitByRegexp` |
-| [`ml`](ml/) | Classic ML algorithms — 6 models, metrics, preprocessing | `LinearRegression`, `KNN`, `KMeans`, `DecisionTree`, ... |
+| [`ml`](ml/) | ML algorithms — 8 models, metrics, preprocessing | `LinearRegression`, `KNN`, `KMeans`, `RandomForest`, ... |
 
 ## Quick Start
 
@@ -178,7 +178,7 @@ mathutil.Divide(10, 0)  // 0 (no panic)
 
 ## Machine Learning
 
-7 classic ML algorithms with a consistent `Fit` / `Predict` API — pure Go, zero dependencies.
+8 ML algorithms with a consistent `Fit` / `Predict` API — pure Go, zero dependencies.
 
 | Algorithm | Type | Key Config |
 |-----------|------|------------|
@@ -187,6 +187,7 @@ mathutil.Divide(10, 0)  // 0 (no panic)
 | `KNN` | Classification | K, Distance (euclidean/manhattan), Weighted |
 | `KMeans` | Clustering | K, MaxIter (K-Means++ init) |
 | `DecisionTree` | Classification | MaxDepth, MinSamples, Criterion (gini/entropy) |
+| `RandomForest` | Classification | NTrees, MaxDepth, MaxFeatures, OOB Score |
 | `GaussianNB` | Classification | — (parameter-free) |
 | `MultinomialNB` | Classification | Alpha (Laplace smoothing) |
 
@@ -253,6 +254,21 @@ dt := ml.NewDecisionTree(ml.DecisionTreeConfig{
 dt.Fit(xTrain, yTrain)
 predictions := dt.Predict(xTest)
 fmt.Println("Importance:", dt.FeatureImportance())
+```
+
+### Random Forest
+
+```go
+rf := ml.NewRandomForest(ml.RandomForestConfig{
+    NTrees:    100,
+    MaxDepth:  10,
+    Criterion: "gini",
+})
+rf.Fit(xTrain, yTrain)
+predictions := rf.Predict(xTest)
+fmt.Println("Accuracy:", ml.Accuracy(yTest, predictions))
+fmt.Println("OOB Score:", rf.OOBScore(xTrain, yTrain))
+fmt.Println("Importance:", rf.FeatureImportance())
 ```
 
 ### Preprocessing & Evaluation
